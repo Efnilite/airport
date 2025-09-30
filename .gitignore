@@ -1,0 +1,8 @@
+.idea/
+build/
+target/
+cmake-build-debug/
+*.exe
+*.o
+src/
+*.py
