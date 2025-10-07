@@ -26,7 +26,7 @@ add_executable(airport
 
 # Test compilation
 
-set(TEST_SOURCES test/querces_test_impl.c test/queue.c test/test.c)
+set(TEST_SOURCES test/querces_test_impl.c test/queue.c)
 
 add_custom_target(setup
         COMMAND ${CMAKE_COMMAND} -E env rm /dev/mqueue/* -f
@@ -59,13 +59,11 @@ add_executable(test
 
         test/queue.c
         test/queue.h
-        test/test.c
         test/test.h
 
         test/main.c
         test/pico_test.c
         test/querces_test_impl.c
-        test/test_example.c
 )
 
 # Executables as part of test target
@@ -76,13 +74,12 @@ add_executable_with_def(pico_check-in src/pico_check-in.c D)
 add_executable_with_def(pico_security src/pico_security.c D)
 add_executable_with_def(pico_default src/pico_default.c D)
 
-add_dependencies(test setup pi pico_gate pico_check-in pico_security pico_default display)
+add_dependencies(test setup pi pico_gate pico_check-in pico_security pico_default display manager)
 
 # Display
 
 add_executable(display
-        test/display.h
-        test/display.c
+        test/display/display.c
 
         test/queue.h
         test/queue.c
@@ -92,4 +89,20 @@ add_dependencies(display setup)
 set_target_properties(display PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/target"
         OUTPUT_NAME "display"
+)
+
+# Manager
+
+add_executable(manager
+        test/manager/manager.c
+
+        test/queue.h
+        test/queue.c
+        test/test.h
+)
+
+add_dependencies(manager setup)
+set_target_properties(manager PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/target"
+        OUTPUT_NAME "manager"
 )

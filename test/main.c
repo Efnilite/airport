@@ -73,7 +73,7 @@ void run_instance(const uint8_t id, const char* process_name, const char* execut
 /**
  * Parses the map.txt file and creates the according queues and processes per line.
  */
-void parse_map() {
+void parse_map(void) {
 	FILE* file = fopen("../map.txt", "r");
 
 	if (file == NULL) {
@@ -139,6 +139,7 @@ int main(int argc, char* argv[]) {
 
 	// first create internal system processes
 	create_process("Display", "../target/display", "");
+	create_process("Manager", "../target/manager", "");
 
 	// create all the processes that represent picos
 	parse_map();

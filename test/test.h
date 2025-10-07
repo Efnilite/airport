@@ -6,19 +6,33 @@
 #define TEST_H
 
 #include "../src/defs.h"
+#include "defs.h"
 
-#include <stdint.h>
+const TestPlane TEST_PLANE = {
 
-/**
- * The two belts present on every module.
- */
-typedef enum { SMALL_BELT, BIG_BELT } Belt;
+	.id = 1,
+	.departure_time = 200,
+	.leaving = true,
 
-/**
- * The two lasers present on every module.
- */
-typedef enum { LEFT_LASER, RIGHT_LASER } Laser;
+};
 
-void place_tub(uint8_t module, const Tub* tub);
+const uint8_t TEST_PLANE_MODULE = 5;
+
+const TestTub TEST_TUB = {
+
+	.id = 0,
+	.plane_id = 1,
+	.destination_id = 13,
+	.destination_type = DEST_SECURITY,
+	.priority = PRIO_ME,
+	.passed_security = false,
+	.needs_security = false,
+	.plane_dropoff = true,
+	.plane_arrived = false,
+	.safe = false
+
+};
+
+const uint8_t TEST_TUB_MODULE = 2;
 
 #endif // TEST_H

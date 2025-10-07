@@ -26,7 +26,7 @@ mqd_t open_queue(const char* queue_name, int flags);
  * @param packet A pointer to the packet that will be updated.
  * @return The size of the read values.
  */
-size_t receive_queue(mqd_t id, Packet* packet);
+ssize_t receive_queue(mqd_t id, Packet* packet);
 
 /**
  * Sends a value to a queue.

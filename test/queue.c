@@ -31,19 +31,12 @@ mqd_t open_queue(const char* queue_name, const int flags) {
 	return queue;
 }
 
-size_t receive_queue(const mqd_t id, Packet* packet) {
+ssize_t receive_queue(const mqd_t id, Packet* packet) {
 	return mq_receive(id, (char*) packet, sizeof(Packet), 0);
 }
 
 int send_queue(const mqd_t id, Packet* packet) {
-	const int success = mq_send(id, (char*) packet, sizeof(Packet), 0);
-
-	if (success == -1) {
-		perror("Failed to send packet");
-		exit(EXIT_FAILURE);
-	}
-
-	return EXIT_SUCCESS;
+	return mq_send(id, (char*) packet, sizeof(Packet), 0);
 }
 
 void close_queue(const mqd_t id, const char* queue_name) {

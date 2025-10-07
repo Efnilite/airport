@@ -5,6 +5,7 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /**
@@ -26,16 +27,20 @@ typedef enum {
 
 typedef enum {
 
+	PACKET_TUB_ARRIVE = 0,
+	PACKET_PLANE_ARRIVE = 1,
+	PACKET_TUB_MOVE = 2,
+
 	/**
 	 * A packet for updating a module's color.
 	 *
-	 * ### Format
+	 * Format
 	 * - char 0: TestPacketType
 	 * - char 1: New R value
 	 * - char 2: New G value
 	 * - char 3: New B value
 	 */
-	PACKET_COLOR_UPDATE,
+	PACKET_COLOR_UPDATE = 3,
 
 } TestPacketType;
 
@@ -63,5 +68,28 @@ typedef struct {
 	 */
 	char data[256];
 } Packet;
+
+typedef struct {
+
+	uint8_t id;
+	uint8_t departure_time;
+	bool leaving;
+
+} TestPlane;
+
+typedef struct {
+
+	uint8_t id;
+	uint8_t plane_id;
+	bool passed_security;
+	bool needs_security;
+	uint8_t destination_id;
+	uint8_t destination_type;
+	uint8_t priority;
+	bool plane_arrived;
+	bool plane_dropoff;
+	bool safe;
+
+} TestTub;
 
 #endif // DEFS_H

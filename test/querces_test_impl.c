@@ -2,6 +2,7 @@
 // Created by Rens on 4/09/25.
 //
 
+#include "../src/defs.h"
 #include "../src/quercus_lib_pico.h"
 #include "defs.h"
 #include "queue.h"
@@ -29,7 +30,7 @@ void sleep(const int ms) {
 /**
  * The queue id of the display communication.
  */
-static mqd_t display_queue;
+static mqd_t manager_queue;
 
 /**
  * The queue ids of all the other target message queues.
@@ -55,7 +56,7 @@ void initialize_q(const int qid) {
 	char queue_name[50];
 	snprintf(queue_name, sizeof(queue_name), "/QA to %d", qid);
 	queue_ids[qid] = open_queue(queue_name, O_RDONLY | O_CREAT | O_EXCL | O_NONBLOCK);
-	display_queue = open_queue("/QA to Display", O_WRONLY);
+	manager_queue = open_queue("/QA to Display", O_WRONLY);
 }
 
 // Module functions
@@ -121,20 +122,27 @@ void subscribe_to_event(const int event_type) { events |= 1 << event_type; }
 // push events with push_event(EventType event_type)
 void unsubscribe_from_event(const int event_type) { events &= ~(1 << event_type); }
 
-Packet recent_read;
+Packet recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
+Packet recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 
 EventType next_event() {
 	Packet packet;
 
-	const size_t size = receive_queue(queue_ids[get_own_id()], &packet);
+	const ssize_t size = receive_queue(queue_ids[get_own_id()], &packet);
 
-	if (size == (size_t)-1) {
+	if (size == (ssize_t)-1) {
 		return EVENT_NONE;
 	}
 
-	recent_read = packet;
+	if (packet.type == TYPE_SYSTEM) {
+		recent_read = packet;
 
-	return EVENT_MESSAGE_RECEIVED;
+		return EVENT_MESSAGE_RECEIVED;
+	}
+
+	recent_test_read = packet;
+
+	return EVENT_NONE;
 }
 
 // Laser functions
@@ -187,7 +195,7 @@ extern int led_set_color(const int color) {
 	packet.data[2] = (char) (color >> 8 & 0xff);
 	packet.data[3] = (char) (color & 0xff);
 
-	send_queue(display_queue, &packet);
+	send_queue(manager_queue, &packet);
 
 	return 0;
 }
@@ -203,13 +211,13 @@ extern int led_set_rgb(const int r, const int g, const int b) {
 	packet.data[2] = (char) g;
 	packet.data[3] = (char) b;
 
-	send_queue(display_queue, &packet);
+	send_queue(manager_queue, &packet);
 
 	return 0;
 }
 
 extern int led_get_color() {
-	fprintf(stderr, "Accessing LED color in tests is not allowed");
+	fprintf(stderr, "Led get color unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -217,17 +225,17 @@ extern int led_get_color() {
 
 // Tests: getting sensor voltage is unsupported
 float CV_sensor_get_voltage() {
-	perror("Sensor voltage call unimplemented");
+	fprintf(stderr, "Sensor voltage call unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
 float CV_sensor_get_power() {
-	perror("Sensor power call unimplemented");
+	fprintf(stderr, "Sensor power call unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
 float CV_sensor_get_current() {
-	perror("Sensor current call unimplemented");
+	fprintf(stderr, "Sensor current call unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -243,12 +251,12 @@ float belt_small_get_speed() { return small_belt_speed; }
 
 // Tests: methods not used
 int64_t belt_small_get_encoder_count() {
-	perror("Small belt encoder count unimplemented");
+	fprintf(stderr, "Small belt encoder count unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
 double belt_small_get_encoder_freq() {
-	perror("Small belt freq unimplemented");
+	fprintf(stderr, "Small belt freq unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -265,23 +273,51 @@ float belt_big_get_speed() { return big_belt_speed; }
 
 // Tests: methods not used
 int64_t belt_big_get_encoder_count() {
-	perror("Big belt encoder count unimplemented");
+	fprintf(stderr, "Big belt encoder count unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
 double belt_big_get_encoder_freq() {
-	perror("Big belt freq unimplemented");
+	fprintf(stderr, "Big belt freq unimplemented\n");
 	exit(EXIT_FAILURE);
 }
 
+char recent_rfid[DATA_RFID_LENGTH];
+
 // DIR_RFID functions
-int RFID_check_tag() { return 0; }
+int RFID_check_tag() {
+	if (recent_test_read.source == (uint8_t)-1) {
+		return false;
+	}
 
-int RFID_write_data_block(int data_ptr, int offset) { return 0; }
+	if (recent_test_read.data[0] != PACKET_PLANE_ARRIVE && recent_test_read.data[0] != PACKET_TUB_ARRIVE) {
+		return false;
+	}
 
-int RFID_read_data_block(int data_ptr, int offset) { return 0; }
+	memcpy(recent_rfid, recent_test_read.data + sizeof(char), DATA_RFID_LENGTH);
 
-int RFID_get_uid(int uid_pointer) { return 0; }
+	fprintf(stderr, "checking rfid\n");
+	recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
+
+	return true;
+}
+
+int RFID_write_data_block(int data_ptr, int offset) {
+	fprintf(stderr, "Writing RFID blocks unimplemented\n");
+	exit(EXIT_FAILURE);
+}
+
+int RFID_read_data_block(int data_ptr, const int offset) {
+	char block[RFID_BLOCK_SIZE];
+	data_ptr[0] = recent_rfid[offset]; // TODO FIX HERE
+	memcpy(data_ptr, block, RFID_BLOCK_SIZE);
+	return 0;
+}
+
+int RFID_get_uid(int uid_pointer) {
+	fprintf(stderr, "RFID get uid unimplemented\n");
+	exit(EXIT_FAILURE);
+}
 
 int next_message_address(uint8_t** address_ptr) {
 	if (recent_read.source == (uint8_t)-1) {
@@ -341,7 +377,7 @@ int send_packet(const int last_dest_octet, const char* app_data, const int data_
 
 	assert(id >= 0);
 
-	const int success = mq_send(id, (char*)&packet, sizeof(Packet), 0);
+	const int success = send_queue(id, &packet);
 
 	if (success == -1) {
 		perror("Failed to send packet");
