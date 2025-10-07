@@ -27,14 +27,19 @@ void sleep(const int ms) {
 }
 
 /**
+ * The queue id of the display communication.
+ */
+static mqd_t display_queue;
+
+/**
  * The queue ids of all the other target message queues.
  */
-mqd_t queue_ids[MAX_PROCESSES];
+static mqd_t queue_ids[MAX_PROCESSES];
 
 /**
  * The module id.
  */
-int q_id = -1;
+static int q_id = -1;
 
 void initialize_q(const int qid) {
 	assert(q_id == -1);
@@ -49,21 +54,14 @@ void initialize_q(const int qid) {
 
 	char queue_name[50];
 	snprintf(queue_name, sizeof(queue_name), "/QA to %d", qid);
-	queue_ids[qid] = open_queue(queue_name, O_RDONLY | O_CREAT | O_EXCL);
-
-	// if (qid > 0) {
-	// 	queue_ids[0] = open_queue("/QA to 0", O_WRONLY);
-	//
-	// 	Packet packet = {.source = get_own_id(), .size = 2, .data = "OK"};
-	//
-	// 	send_queue(queue_ids[0], &packet);
-	// }
+	queue_ids[qid] = open_queue(queue_name, O_RDONLY | O_CREAT | O_EXCL | O_NONBLOCK);
+	display_queue = open_queue("/QA to Display", O_WRONLY);
 }
 
 // Module functions
 int get_own_id() { return q_id; }
 
-char network_map[4096];
+static char network_map[4096];
 
 /**
  * Reads the network map into a buffer.
@@ -128,7 +126,7 @@ Packet recent_read;
 EventType next_event() {
 	Packet packet;
 
-	const size_t size = mq_receive(queue_ids[get_own_id()], (char*)&packet, sizeof(Packet), 0);
+	const size_t size = receive_queue(queue_ids[get_own_id()], &packet);
 
 	if (size == (size_t)-1) {
 		return EVENT_NONE;
@@ -178,12 +176,42 @@ float servo_angle_get() { return servo_angle; }
 
 // LED functions
 
-// Tests: setting led colors has no effect
-extern int led_set_color(int color) { return 0; }
+extern int led_set_color(const int color) {
+	Packet packet;
+	packet.type = TYPE_TEST;
+	packet.source = get_own_id();
+	packet.size = 4;
 
-extern int led_set_rgb(int r, int g, int b) { return 0; }
+	packet.data[0] = PACKET_COLOR_UPDATE;
+	packet.data[1] = (char) (color >> 16 & 0xff);
+	packet.data[2] = (char) (color >> 8 & 0xff);
+	packet.data[3] = (char) (color & 0xff);
 
-extern int led_get_color() { return 0; }
+	send_queue(display_queue, &packet);
+
+	return 0;
+}
+
+extern int led_set_rgb(const int r, const int g, const int b) {
+	Packet packet;
+	packet.type = TYPE_TEST;
+	packet.source = get_own_id();
+	packet.size = 4;
+
+	packet.data[0] = PACKET_COLOR_UPDATE;
+	packet.data[1] = (char) r;
+	packet.data[2] = (char) g;
+	packet.data[3] = (char) b;
+
+	send_queue(display_queue, &packet);
+
+	return 0;
+}
+
+extern int led_get_color() {
+	fprintf(stderr, "Accessing LED color in tests is not allowed");
+	exit(EXIT_FAILURE);
+}
 
 // Current-voltage sensor functions
 
@@ -279,7 +307,7 @@ int next_message_address(uint8_t** address_ptr) {
 	}
 	printf("\n");
 
-	recent_read = (Packet){.source = -1, .size = -1, .data = ""};
+	recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 
 	return packet.size;
 }
@@ -297,13 +325,14 @@ int send_packet(const int last_dest_octet, const char* app_data, const int data_
 	if (queue_ids[last_dest_octet] == -1) {
 		char name[50];
 		snprintf(name, sizeof(name), "/QA to %d", last_dest_octet);
-		printf("[%d] Opening queue to %d just in time\n", get_own_id(), last_dest_octet);
-		queue_ids[last_dest_octet] = open_queue(name, O_WRONLY);
+		printf("[%d] Opening queue to %d during packet send\n", get_own_id(), last_dest_octet);
+		queue_ids[last_dest_octet] = open_queue(name, O_WRONLY | O_NONBLOCK);
 	}
 
 	Packet packet;
 	packet.source = get_own_id();
 	packet.size = data_size;
+	packet.type = TYPE_SYSTEM;
 	for (int i = 0; i < data_size; ++i) {
 		packet.data[i] = app_data[i];
 	}

@@ -19,7 +19,7 @@
 /**
  * The amount of processes created.
  */
-uint8_t processes = 0;
+static uint8_t processes = 0;
 
 /**
  * Creates a new process which will execute the specified executable file.
@@ -137,10 +137,13 @@ void parse_map() {
 
 int main(int argc, char* argv[]) {
 
+	// first create internal system processes
+	create_process("Display", "../target/display", "");
+
 	// create all the processes that represent picos
 	parse_map();
 
-	for (int i = 0; i < processes; ++i) {
+	for (int i = 0; i < processes + 1; ++i) {
 		wait(NULL);
 	}
 

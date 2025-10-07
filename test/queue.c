@@ -19,7 +19,7 @@ mqd_t open_queue(const char* queue_name, const int flags) {
 		.mq_curmsgs = 0 // ignored with mq_open
 	};
 
-	const mqd_t queue = mq_open(queue_name, flags | O_NONBLOCK,
+	const mqd_t queue = mq_open(queue_name, flags,
 		S_IRUSR | S_IWUSR,
 		&attributes);
 
@@ -32,14 +32,7 @@ mqd_t open_queue(const char* queue_name, const int flags) {
 }
 
 size_t receive_queue(const mqd_t id, Packet* packet) {
-	const size_t success = mq_receive(id, (char*) packet, sizeof(Packet), 0);
-
-	if (success == (size_t) -1) {
-		perror("Failed to send packet");
-		exit(EXIT_FAILURE);
-	}
-
-	return EXIT_SUCCESS;
+	return mq_receive(id, (char*) packet, sizeof(Packet), 0);
 }
 
 int send_queue(const mqd_t id, Packet* packet) {

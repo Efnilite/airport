@@ -68,7 +68,6 @@ add_executable(test
         test/test_example.c
 )
 
-
 # Executables as part of test target
 
 add_executable_with_def(pi src/pi.c D)
@@ -77,4 +76,20 @@ add_executable_with_def(pico_check-in src/pico_check-in.c D)
 add_executable_with_def(pico_security src/pico_security.c D)
 add_executable_with_def(pico_default src/pico_default.c D)
 
-add_dependencies(test setup pi pico_gate pico_check-in pico_security pico_default)
+add_dependencies(test setup pi pico_gate pico_check-in pico_security pico_default display)
+
+# Display
+
+add_executable(display
+        test/display.h
+        test/display.c
+
+        test/queue.h
+        test/queue.c
+)
+
+add_dependencies(display setup)
+set_target_properties(display PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/target"
+        OUTPUT_NAME "display"
+)

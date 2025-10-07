@@ -20,9 +20,4 @@ void test_example() {
 	// start tub simulation
 	place_tub(13, &tub);
 
-	// transfer tub to new module
-	// transfer_tub(13, 5, &tub);
-
-	// continue for every module...
-	// very rough draft ofc!
 }

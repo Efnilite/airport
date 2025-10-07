@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const char* name;
+static const char* name;
 
 /**
  * @brief Generic setup function for Picos.
