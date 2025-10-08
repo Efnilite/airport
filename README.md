@@ -2,6 +2,9 @@
 
 Welcome to the digital simulation code of Quercus Airport.
 
+To avoid copyright issues, the source code provided by the course is not provided in this repo.
+The changes in this code are minor, as it only includes changing the main loop setup when the `Q_TEST` flag is designated.
+
 # Testing setup
 
 Before being able to run your tests, you should run the following commands.
