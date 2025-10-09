@@ -125,6 +125,8 @@ void unsubscribe_from_event(const int event_type) { events &= ~(1 << event_type)
 Packet recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 Packet recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 
+char recent_rfid[DATA_RFID_LENGTH];
+
 EventType next_event() {
 	Packet packet;
 
@@ -140,7 +142,15 @@ EventType next_event() {
 		return EVENT_MESSAGE_RECEIVED;
 	}
 
-	recent_test_read = packet;
+	if (packet.data[0] == PACKET_READ_RESET) {
+		for (int i = 0; i < DATA_RFID_LENGTH; ++i) {
+			recent_rfid[i] = '\0';
+		}
+
+		recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
+	} else {
+		recent_test_read = packet;
+	}
 
 	return EVENT_NONE;
 }
@@ -282,8 +292,6 @@ double belt_big_get_encoder_freq() {
 	exit(EXIT_FAILURE);
 }
 
-char recent_rfid[DATA_RFID_LENGTH];
-
 // DIR_RFID functions
 int RFID_check_tag() {
 	if (recent_test_read.source == (uint8_t)-1) {
@@ -336,7 +344,7 @@ int next_message_address(uint8_t** address_ptr) {
 	memcpy(msg, packet.data, packet.size);
 	*address_ptr = msg;
 
-	printf("[%d] Received packet from %d -> size %d ", get_own_id(), packet.source, packet.size);
+	printf("[%d] Received packet from %d (size %d) -> ", get_own_id(), packet.source, packet.size);
 	for (int i = 0; i < packet.size; ++i) {
 		printf("%d ", (int)packet.data[i]);
 	}

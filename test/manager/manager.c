@@ -60,6 +60,22 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	{
+		usleep(250000);
+
+		Packet packet;
+		packet.type = TYPE_TEST;
+		packet.source = 0;
+		packet.size = 1;
+
+		packet.data[0] = PACKET_READ_RESET;
+
+		const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
+		if (queue < 0) {
+			fprintf(stderr, "[Manager] Failed to send tub reset\n");
+		}
+	}
+
 	sleep(5);
 
 	// {
@@ -74,9 +90,25 @@ int main(int argc, char* argv[]) {
 	// 	packet.data[DATA_DEPARTURE_TIME + 1] = (char)TEST_PLANE.departure_time;
 	// 	packet.data[DATA_PLANE_DIRECTION + 1] = (char)TEST_PLANE.leaving;
 	//
-	// 	const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
+	// 	const int queue = send_queue(queue_ids[TEST_PLANE_MODULE], &packet);
 	// 	if (queue < 0) {
 	// 		fprintf(stderr, "[Manager] Failed to send plane init\n");
+	// 	}
+	// }
+	//
+	// {
+	// 	usleep(250000);
+	//
+	// 	Packet packet;
+	// 	packet.type = TYPE_TEST;
+	// 	packet.source = 0;
+	// 	packet.size = 1;
+	//
+	// 	packet.data[0] = PACKET_READ_RESET;
+	//
+	// 	const int queue = send_queue(queue_ids[TEST_PLANE_MODULE], &packet);
+	// 	if (queue < 0) {
+	// 		fprintf(stderr, "[Manager] Failed to send plane reset\n");
 	// 	}
 	// }
 }

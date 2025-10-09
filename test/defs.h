@@ -41,6 +41,7 @@ typedef enum {
 	 * - char 3: New B value
 	 */
 	PACKET_COLOR_UPDATE = 3,
+	PACKET_READ_RESET = 4,
 
 } TestPacketType;
 
