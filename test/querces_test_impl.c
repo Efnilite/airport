@@ -296,9 +296,6 @@ int RFID_check_tag() {
 
 	memcpy(recent_rfid, recent_test_read.data + sizeof(char), DATA_RFID_LENGTH);
 
-	fprintf(stderr, "checking rfid\n");
-	recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
-
 	return true;
 }
 
@@ -307,10 +304,12 @@ int RFID_write_data_block(int data_ptr, int offset) {
 	exit(EXIT_FAILURE);
 }
 
-int RFID_read_data_block(int data_ptr, const int offset) {
-	char block[RFID_BLOCK_SIZE];
-	data_ptr[0] = recent_rfid[offset]; // TODO FIX HERE
-	memcpy(data_ptr, block, RFID_BLOCK_SIZE);
+int RFID_read_data_block(char* data_ptr, const int offset) {
+	if (offset < 0 || offset >= DATA_RFID_LENGTH) {
+		return -1; // invalid offset
+	}
+
+	data_ptr[0] = recent_rfid[offset];
 	return 0;
 }
 

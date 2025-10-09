@@ -60,6 +60,8 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	sleep(5);
+
 	// {
 	// 	Packet packet;
 	// 	packet.type = TYPE_TEST;
@@ -71,7 +73,6 @@ int main(int argc, char* argv[]) {
 	// 	packet.data[DATA_PLANE_ID + 1] = (char)TEST_PLANE.id;
 	// 	packet.data[DATA_DEPARTURE_TIME + 1] = (char)TEST_PLANE.departure_time;
 	// 	packet.data[DATA_PLANE_DIRECTION + 1] = (char)TEST_PLANE.leaving;
-	//
 	//
 	// 	const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
 	// 	if (queue < 0) {
