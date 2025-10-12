@@ -12,7 +12,7 @@
 /**
  * The id of the manager queue.
  */
-static mqd_t manager_queue;
+static mqd_t display_queue;
 
 /**
  * The queue ids of all the other target message queues.
@@ -28,7 +28,7 @@ static void open_manager_queue(const uint8_t module) {
 
 int main(int argc, char* argv[]) {
 
-	manager_queue = open_queue("/QA to Manager", O_RDONLY | O_CREAT | O_EXCL);
+	display_queue = open_queue("/QA to Manager", O_RDONLY | O_CREAT | O_EXCL);
 
 	sleep(5);
 
@@ -36,6 +36,8 @@ int main(int argc, char* argv[]) {
 		open_manager_queue(TEST_TUB_MODULE);
 		open_manager_queue(TEST_PLANE_MODULE);
 	}
+
+	sleep(5);
 
 	{
 		Packet packet;
@@ -60,23 +62,26 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	{
-		usleep(250000);
+	sleep(2);
 
-		Packet packet;
-		packet.type = TYPE_TEST;
-		packet.source = 0;
-		packet.size = 1;
+	// {
+	// 	usleep(250000);
+	//
+	// 	Packet packet;
+	// 	packet.type = TYPE_TEST;
+	// 	packet.source = 0;
+	// 	packet.size = 2;
+	//
+	// 	packet.data[0] = PACKET_TUB_MOVE;
+	// 	packet.data[1] = DIR_LASER_RIGHT;
+	//
+	// 	const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
+	// 	if (queue < 0) {
+	// 		fprintf(stderr, "[Manager] Failed to send tub move\n");
+	// 	}
+	// }
 
-		packet.data[0] = PACKET_READ_RESET;
-
-		const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
-		if (queue < 0) {
-			fprintf(stderr, "[Manager] Failed to send tub reset\n");
-		}
-	}
-
-	sleep(5);
+	sleep(2);
 
 	// {
 	// 	Packet packet;

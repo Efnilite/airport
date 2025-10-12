@@ -27,21 +27,33 @@ typedef enum {
 
 typedef enum {
 
-	PACKET_TUB_ARRIVE = 0,
-	PACKET_PLANE_ARRIVE = 1,
-	PACKET_TUB_MOVE = 2,
-
 	/**
 	 * A packet for updating a module's color.
 	 *
 	 * Format
-	 * - char 0: TestPacketType
+	 * - char 0: DisplayPacketType
 	 * - char 1: New R value
 	 * - char 2: New G value
 	 * - char 3: New B value
 	 */
-	PACKET_COLOR_UPDATE = 3,
-	PACKET_READ_RESET = 4,
+	DISPLAY_COLOR_UPDATE,
+
+	/**
+	 * A packet for updating the tub position.
+	 *
+	 * Format
+	 * - char 0: DisplayPacketType
+	 * - char 1: Tub id
+	 * - char 2: Position inside tub
+	 */
+	DISPLAY_POSITION_UPDATE,
+} DisplayPacketType;
+
+typedef enum {
+
+	PACKET_TUB_ARRIVE = 0,
+	PACKET_PLANE_ARRIVE = 1,
+	PACKET_TUB_MOVE = 2,
 
 } TestPacketType;
 

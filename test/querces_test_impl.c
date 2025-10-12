@@ -6,6 +6,7 @@
 #include "../src/quercus_lib_pico.h"
 #include "defs.h"
 #include "queue.h"
+#include "test.h"
 
 #include <assert.h>
 #include <linux/kernel.h>
@@ -30,7 +31,7 @@ void sleep(const int ms) {
 /**
  * The queue id of the display communication.
  */
-static mqd_t manager_queue;
+static mqd_t display_queue;
 
 /**
  * The queue ids of all the other target message queues.
@@ -41,6 +42,8 @@ static mqd_t queue_ids[MAX_PROCESSES];
  * The module id.
  */
 static int q_id = -1;
+
+char recent_rfid[DATA_RFID_LENGTH];
 
 void initialize_q(const int qid) {
 	assert(q_id == -1);
@@ -56,7 +59,9 @@ void initialize_q(const int qid) {
 	char queue_name[50];
 	snprintf(queue_name, sizeof(queue_name), "/QA to %d", qid);
 	queue_ids[qid] = open_queue(queue_name, O_RDONLY | O_CREAT | O_EXCL | O_NONBLOCK);
-	manager_queue = open_queue("/QA to Display", O_WRONLY);
+	display_queue = open_queue("/QA to Display", O_WRONLY | O_CREAT);
+
+	recent_rfid[0] = (char) 1;
 }
 
 // Module functions
@@ -125,7 +130,8 @@ void unsubscribe_from_event(const int event_type) { events &= ~(1 << event_type)
 Packet recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 Packet recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 
-char recent_rfid[DATA_RFID_LENGTH];
+bool laser_left_detected = false;
+bool laser_right_detected = false;
 
 EventType next_event() {
 	Packet packet;
@@ -142,42 +148,46 @@ EventType next_event() {
 		return EVENT_MESSAGE_RECEIVED;
 	}
 
-	if (packet.data[0] == PACKET_READ_RESET) {
-		for (int i = 0; i < DATA_RFID_LENGTH; ++i) {
-			recent_rfid[i] = '\0';
-		}
-
-		recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
-	} else {
-		recent_test_read = packet;
-	}
+	recent_test_read = packet;
 
 	return EVENT_NONE;
 }
 
 // Laser functions
 
-bool left_laser_on = false;
-bool right_laser_on = false;
+int laser_right_detect() {
+	if (laser_right_detected) {
+		laser_right_detected = false;
+		fprintf(stderr, "[%d] Updated right laser to false\n", get_own_id());
+		return true;
+	}
+	return false;
+}
 
-bool laser_left_detected = false;
-bool laser_right_detected = false;
+int laser_left_detect() {
+	if (laser_left_detected) {
+		laser_left_detected = false;
+		fprintf(stderr, "[%d] Updated left laser to false\n", get_own_id());
+		return true;
+	}
+	return false;
+}
 
-int laser_right_detect() { return laser_right_detected; }
-
-int laser_left_detect() { return laser_left_detected; }
-
-int laser_right_get() { return right_laser_on; }
+int laser_right_get() {
+	fprintf(stderr, "Right laser get unimplemented\n");
+	exit(EXIT_FAILURE);
+}
 
 int laser_right_set(const int on) {
-	right_laser_on = on;
 	return on;
 }
 
-int laser_left_get() { return left_laser_on; }
+int laser_left_get() {
+	fprintf(stderr, "Left laser get unimplemented\n");
+	exit(EXIT_FAILURE);
+}
 
 int laser_left_set(const int on) {
-	left_laser_on = on;
 	return on;
 }
 
@@ -200,12 +210,12 @@ extern int led_set_color(const int color) {
 	packet.source = get_own_id();
 	packet.size = 4;
 
-	packet.data[0] = PACKET_COLOR_UPDATE;
+	packet.data[0] = DISPLAY_COLOR_UPDATE;
 	packet.data[1] = (char) (color >> 16 & 0xff);
 	packet.data[2] = (char) (color >> 8 & 0xff);
 	packet.data[3] = (char) (color & 0xff);
 
-	send_queue(manager_queue, &packet);
+	send_queue(display_queue, &packet);
 
 	return 0;
 }
@@ -216,12 +226,12 @@ extern int led_set_rgb(const int r, const int g, const int b) {
 	packet.source = get_own_id();
 	packet.size = 4;
 
-	packet.data[0] = PACKET_COLOR_UPDATE;
+	packet.data[0] = DISPLAY_COLOR_UPDATE;
 	packet.data[1] = (char) r;
 	packet.data[2] = (char) g;
 	packet.data[3] = (char) b;
 
-	send_queue(manager_queue, &packet);
+	send_queue(display_queue, &packet);
 
 	return 0;
 }
@@ -254,6 +264,15 @@ float small_belt_speed = 0;
 // Small belt functions
 int belt_small_set_speed(const float speed) {
 	small_belt_speed = speed;
+
+	if (small_belt_speed < 0) {
+		fprintf(stderr, "[%d] Moving small belt to the inside\n", get_own_id());
+	} else if (small_belt_speed > 0) {
+		fprintf(stderr, "[%d] Moving small belt to the outside\n", get_own_id());
+	} else {
+		fprintf(stderr, "[%d] Stopping small belt\n", get_own_id());
+	}
+
 	return (int)speed;
 }
 
@@ -276,6 +295,25 @@ float big_belt_speed = 0;
 
 int belt_big_set_speed(const float speed) {
 	big_belt_speed = speed;
+
+	if (big_belt_speed < 0) {
+		fprintf(stderr, "[%d] Moving belt to the right\n", get_own_id());
+	} else if (big_belt_speed > 0) {
+		fprintf(stderr, "[%d] Moving belt to the left\n", get_own_id());
+	} else {
+		fprintf(stderr, "[%d] Stopping belt\n", get_own_id());
+	}
+
+// #ifdef Q_TEST
+// 	sleep(1000);
+//
+// 	if (big_belt_speed < 0) {
+// 		laser_right_detected = true;
+// 	} else if (big_belt_speed > 0) {
+// 		laser_left_detected = true;
+// 	}
+// #endif
+
 	return (int)speed;
 }
 
@@ -294,14 +332,11 @@ double belt_big_get_encoder_freq() {
 
 // DIR_RFID functions
 int RFID_check_tag() {
-	if (recent_test_read.source == (uint8_t)-1) {
+	if (recent_rfid[0] == '\0' || get_own_id() != TEST_TUB_MODULE || recent_test_read.source == (uint8_t) -1) {
 		return false;
 	}
 
-	if (recent_test_read.data[0] != PACKET_PLANE_ARRIVE && recent_test_read.data[0] != PACKET_TUB_ARRIVE) {
-		return false;
-	}
-
+	fprintf(stderr, "[%d] Read RFID\n", get_own_id());
 	memcpy(recent_rfid, recent_test_read.data + sizeof(char), DATA_RFID_LENGTH);
 
 	return true;
@@ -350,7 +385,7 @@ int next_message_address(uint8_t** address_ptr) {
 	}
 	printf("\n");
 
-	recent_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
+	recent_test_read = (Packet){.source = -1, .type = -1, .size = -1, .data = ""};
 
 	return packet.size;
 }
@@ -398,4 +433,14 @@ int send_packet(const int last_dest_octet, const char* app_data, const int data_
 	printf("\n");
 
 	return EXIT_SUCCESS;
+}
+
+mqd_t get_display_queue() {
+	return display_queue;
+}
+
+void reset_rfid() {
+	for (int i = 0; i < DATA_RFID_LENGTH; ++i) {
+		recent_rfid[i] = '\0';
+	}
 }

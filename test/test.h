@@ -22,17 +22,17 @@ const TestTub TEST_TUB = {
 
 	.id = 0,
 	.plane_id = 1,
-	.destination_id = 13,
-	.destination_type = DEST_SECURITY,
+	.destination_id = -1,
+	.destination_type = DEST_PLANE,
 	.priority = PRIO_ME,
 	.passed_security = false,
 	.needs_security = false,
-	.plane_dropoff = true,
+	.plane_dropoff = false,
 	.plane_arrived = false,
-	.safe = false
+	.safe = true
 
 };
 
-const uint8_t TEST_TUB_MODULE = 2;
+const uint8_t TEST_TUB_MODULE = 3;
 
 #endif // TEST_H

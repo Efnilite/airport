@@ -91,6 +91,21 @@ set_target_properties(display PROPERTIES
         OUTPUT_NAME "display"
 )
 
+# SDL
+
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+target_link_libraries(display ${SDL2_LIBRARIES})
+
+# SDL_TTF
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+include_directories(${SDL2_TTF_INCLUDE_DIRS})
+link_directories(${SDL2_TTF_LIBRARY_DIRS})
+target_link_libraries(display ${SDL2_TTF_LIBRARIES})
+
+
 # Manager
 
 add_executable(manager
