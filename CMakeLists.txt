@@ -80,6 +80,7 @@ add_dependencies(test setup pi pico_gate pico_check-in pico_security pico_defaul
 
 add_executable(display
         test/display/display.c
+        test/display/display.h
 
         test/queue.h
         test/queue.c

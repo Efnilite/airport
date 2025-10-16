@@ -99,7 +99,7 @@ void parse_map(void) {
 		}
 
 		if (regexec(&regex, line, 4, matches, 0) != 0) {
-			perror("Line does not match map.txt format of (pi|pico[0-9]+)[[:space:]]+(.*?/)?([^/]*).c");
+			fprintf(stderr, "Line does not match map.txt format: %s\n", line);
 			regfree(&regex);
 			fclose(file);
 			exit(EXIT_FAILURE);
