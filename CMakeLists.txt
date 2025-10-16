@@ -91,6 +91,7 @@ set_target_properties(display PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/target"
         OUTPUT_NAME "display"
 )
+target_link_libraries(display m)
 
 # SDL
 

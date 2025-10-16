@@ -107,16 +107,45 @@ typedef struct {
 	int y;
 } Position;
 
+/**
+ * Rotates a position clockwise
+ * @param position The position to rotate
+ * @param angle The angle
+ * @return The rotated position
+ */
+Position rotate(const Position position, const double angle) {
+	// clockwise rotation
+	const double radian = angle / 180.0 * M_PI;
+	return (Position) {
+		.x = (int) round(position.x * cos(radian) + position.y * sin(radian)),
+		.y = (int) round(- position.x * sin(radian) + position.y * cos(radian)),
+	};
+}
+
+
+/**
+ * Translates a position
+ * @param position The position to translate
+ * @param d The translation
+ * @return The translated position
+ */
+Position translate(const Position position, const Position d) {
+	return (Position) {
+		.x = position.x + d.x,
+		.y = position.y + d.y,
+	};
+}
+
 void calculate_positions(const Neighbors* neighbors, Position* positions) {
-	positions[CENTER_MODULE_ID] = (Position) {
-		.x = 200,
-		.y = 200
+	positions[1] = (Position) {
+		.x = 100,
+		.y = 100
 	};
 
 	// the current id.
-	unsigned int current_id = CENTER_MODULE_ID;
+	unsigned int current_id = 1;
 	// all current neighbors.
-	Neighbors current_neighbors = neighbors[CENTER_MODULE_ID];
+	Neighbors current_neighbors = neighbors[1];
 
 	// represents all nodes that have been visited.
 	bool visited[MAX_PROCESSES];
@@ -128,32 +157,32 @@ void calculate_positions(const Neighbors* neighbors, Position* positions) {
 		found[i] = false;
 	}
 	visited[0] = true;
-	visited[9] = true;
+	visited[1] = true;
 
 	while (true) {
 start:
 
+		const unsigned int previous_id = current_id;
+		Position change;
 		if (!visited[current_neighbors.bottom]) {
-			const Position new = (Position) {
-				.x = positions[current_id].x,
-				.y = positions[current_id].y + MODULE_SIZE_PX,
+			change = (Position) {
+				.x = 0,
+				.y = MODULE_SIZE_PX,
 			};
 			current_id = current_neighbors.bottom;
-			positions[current_id] = new;
+			positions[current_id] = change;
 		} else if (!visited[current_neighbors.left]) {
-			const Position new = (Position) {
-				.x = positions[current_id].x - MODULE_SIZE_PX,
-				.y = positions[current_id].y,
+			change = (Position) {
+				.x = MODULE_SIZE_PX,
+				.y = 0,
 			};
 			current_id = current_neighbors.left;
-			positions[current_id] = new;
 		} else if (!visited[current_neighbors.right]) {
-			const Position new = (Position) {
-				.x = positions[current_id].x + MODULE_SIZE_PX,
-				.y = positions[current_id].y,
+			change = (Position) {
+				.x = -MODULE_SIZE_PX,
+				.y = 0,
 			};
 			current_id = current_neighbors.right;
-			positions[current_id] = new;
 		} else {
 			// all neighbors have been visited
 			for (int i = 0; i < MAX_PROCESSES; ++i) {
@@ -173,6 +202,10 @@ start:
 			break;
 		}
 
+		fprintf(stderr, "%d -> %d %d change by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y, change.x, change.y);
+		const Position rotation = rotate(change, MODULE_ANGLES[previous_id]);
+		fprintf(stderr, "%d -> %d %d rotate by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y, rotation.x, rotation.y);
+		positions[current_id] = translate(positions[previous_id], rotation);
 		current_neighbors = neighbors[current_id];
 		found[current_neighbors.left] = true;
 		found[current_neighbors.bottom] = true;
@@ -243,7 +276,7 @@ static void update(void) {
 	}
 }
 
-int main(int argc, char* argv[]) {
+int main(void) {
 	Position positions[MAX_PROCESSES];
 
 	// setup
@@ -267,7 +300,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	SDL_Window* window =
-		SDL_CreateWindow("Module Colors", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, 0);
+		SDL_CreateWindow("Module Colors", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1000, 1000, 0);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 	TTF_Font* font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20);
