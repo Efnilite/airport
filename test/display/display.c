@@ -139,7 +139,7 @@ Position translate(const Position position, const Position d) {
  * @param positions The positions
  */
 void calculate_positions(const Neighbors* neighbors, Position* positions) {
-	positions[1] = (Position){.x = 150, .y = 150};
+	positions[1] = (Position){.x = 200, .y = 200};
 
 	// the current id.
 	unsigned int current_id = 1;
@@ -303,8 +303,27 @@ void display_module(const unsigned int id, const Position* positions, SDL_Render
 	}
 	// global -> local coordinates
 	const int half = MODULE_SIZE_PX / 2;
-	const Position position = (Position) { initial_pos.x, initial_pos.y };
+	const Position position = (Position){initial_pos.x, initial_pos.y};
 	const int angle = MODULE_ANGLES[id];
+
+	// tub
+	{
+		if (tub_id == id) {
+			const Position ts = translate(position, (Position){-MODULE_GAP / 2, -MODULE_GAP / 2});
+
+			display_rectangle( ts, (Position){MODULE_GAP, MODULE_GAP}, 255, 0, 0, renderer);
+
+			char text[32];
+			snprintf(text, sizeof(text), "%d", tub_position);
+			const SDL_Color textColor = {255, 255, 255, 255};
+			SDL_Surface* surface = TTF_RenderText_Blended(font, text, textColor);
+			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+			const SDL_Rect dst = {ts.x, ts.y, surface->w, surface->h};
+			SDL_RenderCopy(renderer, texture, NULL, &dst);
+			SDL_FreeSurface(surface);
+			SDL_DestroyTexture(texture);
+		}
+	}
 
 	// rects
 	{
@@ -313,15 +332,21 @@ void display_module(const unsigned int id, const Position* positions, SDL_Render
 		const uint8_t g = color >> 8 & 0xFF;
 		const uint8_t b = color & 0xFF;
 
-		display_rectangle(position, (Position) { 1, 1 }, r, g, b, renderer);
+		display_rectangle(position, (Position){1, 1}, r, g, b, renderer);
 
-		display_rectangle(translate(rotate((Position) { -half, -MODULE_GAP }, angle), position), rotate((Position) { MODULE_SIZE_PX, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position){-half, -MODULE_GAP}, angle), position),
+						  rotate((Position){MODULE_SIZE_PX, MODULE_EDGE_WIDTH}, angle), r, g, b, renderer);
 
-		display_rectangle(translate(rotate((Position) { -half, MODULE_GAP - MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
-		display_rectangle(translate(rotate((Position) { half - 55, MODULE_GAP - MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position){-half, MODULE_GAP - MODULE_EDGE_WIDTH}, angle), position),
+						  rotate((Position){half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH}, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position){half - 55, MODULE_GAP - MODULE_EDGE_WIDTH}, angle), position),
+						  rotate((Position){half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH}, angle), r, g, b, renderer);
 
-		display_rectangle(translate(rotate((Position) { - MODULE_EDGE_WIDTH - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
-		display_rectangle(translate(rotate((Position) { MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+		display_rectangle(
+			translate(rotate((Position){-MODULE_EDGE_WIDTH - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH}, angle), position),
+			rotate((Position){MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH}, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position){MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH}, angle), position),
+						  rotate((Position){MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH}, angle), r, g, b, renderer);
 	}
 
 	// text
@@ -389,22 +414,6 @@ int main(void) {
 
 		for (int i = 1; i < MAX_PROCESSES; ++i) {
 			display_module(i, positions, renderer, font);
-		}
-
-		{
-			SDL_Rect rect = {(int)tub_id * 40, 40, 40, 40};
-			SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-			SDL_RenderFillRect(renderer, &rect);
-
-			char text[32];
-			snprintf(text, sizeof(text), "%d", tub_position);
-			const SDL_Color textColor = {255, 255, 255, 255};
-			SDL_Surface* surface = TTF_RenderText_Blended(font, text, textColor);
-			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-			SDL_Rect dst = {(int)tub_id * 40 + 10, 50, surface->w, surface->h};
-			SDL_RenderCopy(renderer, texture, NULL, &dst);
-			SDL_FreeSurface(surface);
-			SDL_DestroyTexture(texture);
 		}
 
 		SDL_RenderPresent(renderer);
