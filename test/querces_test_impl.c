@@ -9,14 +9,12 @@
 #include "test.h"
 
 #include <assert.h>
-#include <linux/kernel.h>
 #include <math.h>
 #include <mqueue.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/sysinfo.h>
 #include <time.h>
 
 #define MS_TO_NS 1000000
@@ -105,14 +103,11 @@ char* get_network_map() {
 }
 
 int get_uptime() {
-	struct sysinfo s;
-
-	if (sysinfo(&s) < 0) {
-		perror("Failed to get uptime");
-		exit(EXIT_FAILURE);
+	struct timespec ts;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+		return (int) (ts.tv_sec * 1000ull + ts.tv_nsec / 1000000ul);
 	}
-
-	return (int)s.uptime;
+	return 0;
 }
 
 /**
@@ -332,7 +327,10 @@ double belt_big_get_encoder_freq() {
 
 // DIR_RFID functions
 int RFID_check_tag() {
-	if (recent_rfid[0] == '\0' || get_own_id() != TEST_TUB_MODULE || recent_test_read.source == (uint8_t) -1) {
+	if (recent_rfid[0] == '\0' || recent_test_read.source == (uint8_t) -1) {
+		return false;
+	}
+	if (get_own_id() != TEST_TUB_MODULE && get_own_id() != TEST_PLANE_MODULE) {
 		return false;
 	}
 
@@ -443,4 +441,10 @@ void reset_rfid() {
 	for (int i = 0; i < DATA_RFID_LENGTH; ++i) {
 		recent_rfid[i] = '\0';
 	}
+}
+
+int last_update = 0;
+
+void update_belt() {
+
 }

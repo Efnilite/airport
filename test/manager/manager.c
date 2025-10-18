@@ -64,56 +64,22 @@ int main(int argc, char* argv[]) {
 
 	sleep(2);
 
-	// {
-	// 	usleep(250000);
-	//
-	// 	Packet packet;
-	// 	packet.type = TYPE_TEST;
-	// 	packet.source = 0;
-	// 	packet.size = 2;
-	//
-	// 	packet.data[0] = PACKET_TUB_MOVE;
-	// 	packet.data[1] = DIR_LASER_RIGHT;
-	//
-	// 	const int queue = send_queue(queue_ids[TEST_TUB_MODULE], &packet);
-	// 	if (queue < 0) {
-	// 		fprintf(stderr, "[Manager] Failed to send tub move\n");
-	// 	}
-	// }
+	{
+		Packet packet;
+		packet.type = TYPE_TEST;
+		packet.source = 0;
+		packet.size = DATA_RFID_LENGTH + 1;
 
-	sleep(2);
+		packet.data[0] = PACKET_PLANE_ARRIVE;
+		packet.data[DATA_TUB_OR_PLANE + 1] = 1;
+		packet.data[DATA_PLANE_ID + 1] = (char)TEST_PLANE.id;
+		packet.data[DATA_DEPARTURE_TIME + 1] = (char)TEST_PLANE.departure_time;
+		packet.data[DATA_PLANE_DIRECTION + 1] = (char)TEST_PLANE.leaving;
 
-	// {
-	// 	Packet packet;
-	// 	packet.type = TYPE_TEST;
-	// 	packet.source = 0;
-	// 	packet.size = DATA_RFID_LENGTH + 1;
-	//
-	// 	packet.data[0] = PACKET_PLANE_ARRIVE;
-	// 	packet.data[DATA_TUB_OR_PLANE + 1] = 1;
-	// 	packet.data[DATA_PLANE_ID + 1] = (char)TEST_PLANE.id;
-	// 	packet.data[DATA_DEPARTURE_TIME + 1] = (char)TEST_PLANE.departure_time;
-	// 	packet.data[DATA_PLANE_DIRECTION + 1] = (char)TEST_PLANE.leaving;
-	//
-	// 	const int queue = send_queue(queue_ids[TEST_PLANE_MODULE], &packet);
-	// 	if (queue < 0) {
-	// 		fprintf(stderr, "[Manager] Failed to send plane init\n");
-	// 	}
-	// }
-	//
-	// {
-	// 	usleep(250000);
-	//
-	// 	Packet packet;
-	// 	packet.type = TYPE_TEST;
-	// 	packet.source = 0;
-	// 	packet.size = 1;
-	//
-	// 	packet.data[0] = PACKET_READ_RESET;
-	//
-	// 	const int queue = send_queue(queue_ids[TEST_PLANE_MODULE], &packet);
-	// 	if (queue < 0) {
-	// 		fprintf(stderr, "[Manager] Failed to send plane reset\n");
-	// 	}
-	// }
+		const int queue = send_queue(queue_ids[TEST_PLANE_MODULE], &packet);
+		if (queue < 0) {
+			fprintf(stderr, "[Manager] Failed to send plane init\n");
+		}
+	}
+
 }

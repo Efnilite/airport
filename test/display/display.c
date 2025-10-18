@@ -3,9 +3,11 @@
 //
 
 #include "display.h"
+#include "../../src/defs.h"
 #include "../defs.h"
 #include "../queue.h"
 
+#include <assert.h>
 #include <mqueue.h>
 #include <regex.h>
 #include <stdio.h>
@@ -201,21 +203,13 @@ void calculate_positions(const Neighbors* neighbors, Position* positions) {
 			break;
 		}
 
-		fprintf(stderr, "%d -> %d %d change by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y,
-				change.x, change.y);
 		const Position rotation = rotate(change, MODULE_ANGLES[previous_id]);
-		fprintf(stderr, "%d -> %d %d rotate by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y,
-				rotation.x, rotation.y);
 		positions[current_id] = translate(positions[previous_id], rotation);
 		current_neighbors = neighbors[current_id];
 		found[current_neighbors.left] = true;
 		found[current_neighbors.bottom] = true;
 		found[current_neighbors.right] = true;
 		visited[current_id] = true;
-	}
-
-	for (int i = 0; i < MAX_PROCESSES; ++i) {
-		fprintf(stderr, "ID %d gets pos %d %d\n", i, positions[i].x, positions[i].y);
 	}
 }
 
@@ -309,19 +303,20 @@ void display_module(const unsigned int id, const Position* positions, SDL_Render
 	// tub
 	{
 		if (tub_id == id) {
-			const Position ts = translate(position, (Position){-MODULE_GAP / 2, -MODULE_GAP / 2});
+			Position ts = translate(position, (Position){-MODULE_GAP / 2, -MODULE_GAP / 2});
 
-			display_rectangle( ts, (Position){MODULE_GAP, MODULE_GAP}, 255, 0, 0, renderer);
+			const int d = MODULE_GAP + MODULE_EDGE_WIDTH - 5;
+			if (tub_position == DIR_RFID) {
+				ts = translate(ts, (Position){0, -d});
+			} else if (tub_position == DIR_LASER_LEFT) {
+				ts = translate(ts, (Position){-d, 0});
+			} else if (tub_position == DIR_LASER_RIGHT) {
+				ts = translate(ts, (Position){d, 0});
+			} else {
+				assert(false);
+			}
 
-			char text[32];
-			snprintf(text, sizeof(text), "%d", tub_position);
-			const SDL_Color textColor = {255, 255, 255, 255};
-			SDL_Surface* surface = TTF_RenderText_Blended(font, text, textColor);
-			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-			const SDL_Rect dst = {ts.x, ts.y, surface->w, surface->h};
-			SDL_RenderCopy(renderer, texture, NULL, &dst);
-			SDL_FreeSurface(surface);
-			SDL_DestroyTexture(texture);
+			display_rectangle(ts, (Position){MODULE_GAP, MODULE_GAP}, 255, 0, 0, renderer);
 		}
 	}
 
