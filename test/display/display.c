@@ -139,7 +139,7 @@ Position translate(const Position position, const Position d) {
  * @param positions The positions
  */
 void calculate_positions(const Neighbors* neighbors, Position* positions) {
-	positions[1] = (Position){.x = 100, .y = 100};
+	positions[1] = (Position){.x = 150, .y = 150};
 
 	// the current id.
 	unsigned int current_id = 1;
@@ -313,9 +313,15 @@ void display_module(const unsigned int id, const Position* positions, SDL_Render
 		const uint8_t g = color >> 8 & 0xFF;
 		const uint8_t b = color & 0xFF;
 
-		display_rectangle(translate(rotate((Position) { -half, -30 }, angle), position), rotate((Position) { MODULE_SIZE_PX, 20 }, angle), r, g, b, renderer);
-		display_rectangle(translate(rotate((Position) { -half, 30 }, angle), position), rotate((Position) { half - 20, 20 }, angle), r, g, b, renderer);
-		display_rectangle(translate(rotate((Position) { half - 55, 30 }, angle), position), rotate((Position) { half - 20, 20 }, angle), r, g, b, renderer);
+		display_rectangle(position, (Position) { 1, 1 }, r, g, b, renderer);
+
+		display_rectangle(translate(rotate((Position) { -half, -MODULE_GAP }, angle), position), rotate((Position) { MODULE_SIZE_PX, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+
+		display_rectangle(translate(rotate((Position) { -half, MODULE_GAP - MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position) { half - 55, MODULE_GAP - MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { half - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+
+		display_rectangle(translate(rotate((Position) { - MODULE_EDGE_WIDTH - MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position) { MODULE_EDGE_WIDTH, MODULE_EDGE_WIDTH }, angle), position), rotate((Position) { MODULE_EDGE_WIDTH, half - MODULE_EDGE_WIDTH }, angle), r, g, b, renderer);
 	}
 
 	// text

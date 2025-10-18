@@ -15,6 +15,11 @@ const unsigned int CENTER_MODULE_ID = 9;
  */
 const int MODULE_SIZE_PX = 150;
 
+const int MODULE_SIZE_PX_HALF = MODULE_SIZE_PX / 2;
+
+const int MODULE_GAP = 40;
+const int MODULE_EDGE_WIDTH = 20;
+
 const int MODULE_ANGLES[] = {
 	0,
 	90,
