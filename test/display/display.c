@@ -2,9 +2,9 @@
 // Created by efy on 7/10/25.
 //
 
+#include "display.h"
 #include "../defs.h"
 #include "../queue.h"
-#include "display.h"
 
 #include <mqueue.h>
 #include <regex.h>
@@ -91,11 +91,9 @@ void parse_map(Neighbors* neighbors) {
 		const unsigned int id = parse_regex(matches[1], line);
 
 		// neighbors are assigned left -> bottom -> right if module is shaped like a T.
-		neighbors[id] = (Neighbors) {
-			.left = parse_regex(matches[2], line),
-			.bottom = parse_regex(matches[3], line),
-			.right = parse_regex(matches[4], line)
-		};
+		neighbors[id] = (Neighbors){.left = parse_regex(matches[2], line),
+									.bottom = parse_regex(matches[3], line),
+									.right = parse_regex(matches[4], line)};
 	}
 
 	regfree(&regex);
@@ -116,12 +114,11 @@ typedef struct {
 Position rotate(const Position position, const double angle) {
 	// clockwise rotation
 	const double radian = angle / 180.0 * M_PI;
-	return (Position) {
-		.x = (int) round(position.x * cos(radian) + position.y * sin(radian)),
-		.y = (int) round(- position.x * sin(radian) + position.y * cos(radian)),
+	return (Position){
+		.x = (int)round(position.x * cos(radian) + position.y * sin(radian)),
+		.y = (int)round(-position.x * sin(radian) + position.y * cos(radian)),
 	};
 }
-
 
 /**
  * Translates a position
@@ -130,17 +127,19 @@ Position rotate(const Position position, const double angle) {
  * @return The translated position
  */
 Position translate(const Position position, const Position d) {
-	return (Position) {
+	return (Position){
 		.x = position.x + d.x,
 		.y = position.y + d.y,
 	};
 }
 
+/**
+ * Calculates the positions of the modules.
+ * @param neighbors The neighbors
+ * @param positions The positions
+ */
 void calculate_positions(const Neighbors* neighbors, Position* positions) {
-	positions[1] = (Position) {
-		.x = 100,
-		.y = 100
-	};
+	positions[1] = (Position){.x = 100, .y = 100};
 
 	// the current id.
 	unsigned int current_id = 1;
@@ -160,25 +159,25 @@ void calculate_positions(const Neighbors* neighbors, Position* positions) {
 	visited[1] = true;
 
 	while (true) {
-start:
+	start:
 
 		const unsigned int previous_id = current_id;
 		Position change;
 		if (!visited[current_neighbors.bottom]) {
-			change = (Position) {
+			change = (Position){
 				.x = 0,
 				.y = MODULE_SIZE_PX,
 			};
 			current_id = current_neighbors.bottom;
 			positions[current_id] = change;
 		} else if (!visited[current_neighbors.left]) {
-			change = (Position) {
+			change = (Position){
 				.x = MODULE_SIZE_PX,
 				.y = 0,
 			};
 			current_id = current_neighbors.left;
 		} else if (!visited[current_neighbors.right]) {
-			change = (Position) {
+			change = (Position){
 				.x = -MODULE_SIZE_PX,
 				.y = 0,
 			};
@@ -189,8 +188,8 @@ start:
 				if (!visited[i] && found[i]) {
 					// find any neighbor to get coords
 					for (int j = 0; j < MAX_PROCESSES; ++j) {
-						if (found[j]
-							&& (neighbors[j].left == i || neighbors[j].bottom == i || neighbors[j].right == i)) {
+						if (found[j] &&
+							(neighbors[j].left == i || neighbors[j].bottom == i || neighbors[j].right == i)) {
 							current_id = j;
 							current_neighbors = neighbors[current_id];
 							goto start;
@@ -202,9 +201,11 @@ start:
 			break;
 		}
 
-		fprintf(stderr, "%d -> %d %d change by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y, change.x, change.y);
+		fprintf(stderr, "%d -> %d %d change by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y,
+				change.x, change.y);
 		const Position rotation = rotate(change, MODULE_ANGLES[previous_id]);
-		fprintf(stderr, "%d -> %d %d rotate by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y, rotation.x, rotation.y);
+		fprintf(stderr, "%d -> %d %d rotate by %d %d\n", current_id, positions[previous_id].x, positions[previous_id].y,
+				rotation.x, rotation.y);
 		positions[current_id] = translate(positions[previous_id], rotation);
 		current_neighbors = neighbors[current_id];
 		found[current_neighbors.left] = true;
@@ -248,6 +249,9 @@ static unsigned long rgb_to_hex(const unsigned int r, const unsigned int g, cons
 	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 }
 
+/**
+ * Updates the view by the existing packet.
+ */
 static void update(void) {
 	Packet packet;
 	const ssize_t size = receive_queue(display_queue, &packet);
@@ -273,6 +277,58 @@ static void update(void) {
 	default:
 		fprintf(stderr, "Invalid packet type %d", type);
 		exit(EXIT_FAILURE);
+	}
+}
+
+/**
+ * Displays a rectangle.
+ * @param position The position.
+ * @param dimensions The dimensions.
+ * @param r The red value in RGB.
+ * @param g The green value in RGB.
+ * @param b The blue value in RGB.
+ * @param renderer The SDL Renderer
+ */
+void display_rectangle(const Position position, const Position dimensions, const int r, const int g, const int b,
+					   SDL_Renderer* renderer) {
+	const SDL_Rect rect = {position.x, position.y, dimensions.x, dimensions.y};
+	SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+	SDL_RenderFillRect(renderer, &rect);
+}
+
+void display_module(const unsigned int id, const Position* positions, SDL_Renderer* renderer, TTF_Font* font) {
+	const Position initial_pos = positions[id];
+	if (initial_pos.x == 0 && initial_pos.y == 0) {
+		return;
+	}
+	// global -> local coordinates
+	const int half = MODULE_SIZE_PX / 2;
+	const Position position = (Position) { initial_pos.x, initial_pos.y };
+	const int angle = MODULE_ANGLES[id];
+
+	// rects
+	{
+		const unsigned int color = colors[id];
+		const uint8_t r = color >> 16 & 0xFF;
+		const uint8_t g = color >> 8 & 0xFF;
+		const uint8_t b = color & 0xFF;
+
+		display_rectangle(translate(rotate((Position) { -half, -30 }, angle), position), rotate((Position) { MODULE_SIZE_PX, 20 }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position) { -half, 30 }, angle), position), rotate((Position) { half - 20, 20 }, angle), r, g, b, renderer);
+		display_rectangle(translate(rotate((Position) { half - 55, 30 }, angle), position), rotate((Position) { half - 20, 20 }, angle), r, g, b, renderer);
+	}
+
+	// text
+	{
+		char text[32];
+		snprintf(text, sizeof(text), "%d", id);
+		const SDL_Color textColor = {255, 255, 255, 255};
+		SDL_Surface* surface = TTF_RenderText_Blended(font, text, textColor);
+		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+		const SDL_Rect dst = {position.x, position.y, surface->w, surface->h};
+		SDL_RenderCopy(renderer, texture, NULL, &dst);
+		SDL_FreeSurface(surface);
+		SDL_DestroyTexture(texture);
 	}
 }
 
@@ -326,28 +382,7 @@ int main(void) {
 		update();
 
 		for (int i = 1; i < MAX_PROCESSES; ++i) {
-			const unsigned int color = colors[i];
-			const uint8_t r = color >> 16 & 0xFF;
-			const uint8_t g = color >> 8 & 0xFF;
-			const uint8_t b = color & 0xFF;
-
-			const Position position = positions[i];
-			if (position.x == 0 && position.y == 0) {
-				break;
-			}
-			SDL_Rect rect = {position.x, position.y, MODULE_SIZE_PX, MODULE_SIZE_PX};
-			SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-			SDL_RenderFillRect(renderer, &rect);
-
-			char text[32];
-			snprintf(text, sizeof(text), "%d", i);
-			const SDL_Color textColor = {255, 255, 255, 255};
-			SDL_Surface* surface = TTF_RenderText_Blended(font, text, textColor);
-			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-			SDL_Rect dst = {position.x, position.y, surface->w, surface->h};
-			SDL_RenderCopy(renderer, texture, NULL, &dst);
-			SDL_FreeSurface(surface);
-			SDL_DestroyTexture(texture);
+			display_module(i, positions, renderer, font);
 		}
 
 		{
