@@ -62,7 +62,7 @@ void run_instance(const uint8_t id, const char* process_name, const char* execut
 
 	snprintf(name, sizeof(name), "%s %d", process_name, id);
 	snprintf(arg, sizeof(arg), "%d", id);
-	snprintf(target_file, sizeof(target_file), "../target/%s", executable);
+	snprintf(target_file, sizeof(target_file), "target/%s", executable);
 
 	printf("[Tests] Starting %s %d\n", process_name, id);
 	create_process(name, target_file, arg);
@@ -74,7 +74,7 @@ void run_instance(const uint8_t id, const char* process_name, const char* execut
  * Parses the map.txt file and creates the according queues and processes per line.
  */
 void parse_map(void) {
-	FILE* file = fopen("../map.txt", "r");
+	FILE* file = fopen("map.txt", "r");
 
 	if (file == NULL) {
 		perror("Failed to read map.txt");
@@ -138,8 +138,8 @@ void parse_map(void) {
 int main(int argc, char* argv[]) {
 
 	// first create internal system processes
-	create_process("Display", "../target/display", "");
-	create_process("Manager", "../target/manager", "");
+	create_process("Display", "target/display", "");
+	create_process("Manager", "target/manager", "");
 
 	// create all the processes that represent picos
 	parse_map();

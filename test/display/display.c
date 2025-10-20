@@ -53,7 +53,7 @@ typedef struct {
  * Populates neighbors.
  */
 void parse_map(Neighbors* neighbors) {
-	FILE* file = fopen("../network_map", "r");
+	FILE* file = fopen("network_map", "r");
 
 	if (file == NULL) {
 		perror("Failed to read network_map");

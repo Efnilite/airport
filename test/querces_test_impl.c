@@ -76,7 +76,7 @@ static char network_map[4096];
 // shamelessly stolen from
 // https://gitlab.tue.nl/2irr70-capstone-quercus-airport/quercus_pi_libcoap/-/blob/main/src/coap/pico_monitor.c?ref_type=heads#L111
 size_t read_network_map(char* buffer, const size_t buffer_size) {
-	FILE* file = fopen("../network_map", "r");
+	FILE* file = fopen("network_map", "r");
 	if (file == NULL) {
 		perror("Failed to open network map file");
 		return -1;
