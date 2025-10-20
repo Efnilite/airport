@@ -6,3 +6,7 @@ cmake-build-debug/
 *.o
 src/
 *.py
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
