@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# The size of the message queues
+MESSAGE_QUEUE_SIZE=100
+# The packages to install
+PACKAGES=(libsdl2-dev libsdl2-ttf-dev make cmake)
+
+echo_error() {
+  >&2 echo "$@"
+}
+
+if [ ! -f "CMakeLists.txt"  ] || [ ! -f "map.txt" ]  || [ ! -f "map.txt" ]; then
+    echo_error "The run script can only be run in the project directory."
+    exit 1
+fi
+
+case $1 in
+  test)
+    COMMAND="make test && ./target/test"
+    ;;
+  pi)
+    COMMAND="make pi_single && ./target/pi_single"
+    ;;
+  *)
+    echo_error "Invalid command '$1'."
+    echo_error "Usage:"
+    echo_error " ./run test - Runs the entire test suite."
+    echo_error " ./run pi - Runs the simulated Pi."
+    exit 1
+    ;;
+esac
+
+# Install packages
+sudo apt update
+sudo apt upgrade
+sudo apt install "${PACKAGES[@]}"
+
+# Init cmake
+cmake .
+
+# Setup mqueue size
+sudo sysctl -w fs.mqueue.msg_max="$MESSAGE_QUEUE_SIZE"
+sudo sysctl -p
+
+# Run command
+echo "$COMMAND" | bash
