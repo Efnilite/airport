@@ -9,7 +9,7 @@ echo_error() {
   >&2 echo "$@"
 }
 
-if [ ! -f "CMakeLists.txt"  ] || [ ! -f "map.txt" ]  || [ ! -f "map.txt" ]; then
+if [ ! -f "CMakeLists.txt"  ] || [ ! -f "map.txt" ]  || [ ! -f "network_map" ]; then
     echo_error "The run script can only be run in the project directory."
     exit 1
 fi
